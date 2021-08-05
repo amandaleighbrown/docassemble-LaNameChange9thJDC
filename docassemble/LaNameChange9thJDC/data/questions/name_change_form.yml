@@ -79,13 +79,13 @@ code: |
   allowed_courts = interview_metadata["Name_Change_Form_1_1_1"]["allowed courts"]
   nav.set_section('review_Name_Change_Form_1_1_1')
   user_role = plaintiff
-  
   users[0].name.first
+  petitioner_birthdate
   name_new
-  birthdate_day_and_month
-  set_progress(25.0)
+  set_progress(50.0)
   petitioners[0].address.address
   petitioners[0].phone_number
+  trial_court_index
   interview_order_Name_Change_Form_1_1_1 = True
 ---
 comment: |
@@ -124,8 +124,8 @@ id: About you
 question: |
   About you
 fields:
-  - "What is the month and day of your birthday? (e.x., July 12)": birthdate_day_and_month
-  - "In what year were you born?": birthdate_year
+  - "What is your birthdate?": petitioner_birthdate
+    datatype: date
   - "What is your social security number?": social_security_number
   
 ---
@@ -144,6 +144,7 @@ id: your contact information
 sets:
   - users[0].address.address
   - users[0].address.city
+  - users[0].address.county
   - users[0].address.zip
 question: |
   What is your contact information?
@@ -152,6 +153,7 @@ subquestion: |
 fields:
   - code: |
       users[0].address_fields(default_state="LA")
+  - Parish: users[0].address.county
   - Primary phone number: users[0].phone_number
     required: True
 validation code: |
@@ -169,6 +171,14 @@ help: |
   is able to contact you. Make sure to include at least one way to reach you
   other than mail.
   % endif
+---
+sets: users[0].address.county
+code: |
+  user[0].address.geocode()
+---
+code: |
+  address.reset_geocoding()
+  address.geocoding_reset = True
 ---
 progress: 100
 id: download
@@ -221,13 +231,22 @@ attachment:
       - "petitioner_phone_number": ${ petitioners[0].phone_number }
       - "petitioner__4": ${ petitioners[0] }
       - "petitioner__5": ${ petitioners[0] }
-      - "birthdate_day_and_month": ${ birthdate_day_and_month }
-      - "birthdate_year": ${ birthdate_year }
+      - "petitioner_birthdate": ${ petitioner_birthdate }
       - "social_security_number": ${ social_security_number }
       - "name_new__1": ${ name_new }
       - "name_change_reason": ${ name_change_reason }
       - "name_new__2": ${ name_new }
       - "name_new__3": ${ name_new }
+      - "filing_parish1": ${ trial_court.name }
+      - "filing_parish2": ${ trial_court.name }
+      - "filing_parish3": ${ trial_court.name }
+      - "filing_parish4": ${ trial_court.name }
+      - "judicial_district1": ${ trial_court.judicial_district }
+      - "judicial_district2": ${ trial_court.judicial_district }
+      - "judicial_district3": ${ trial_court.judicial_district }
+      - "district_court1": ${ trial_court.judicial_district }
+      - "petitioner_domicile": ${ users[0].address.county.replace(" Parish", "") }
+
       # It's a signature: test which file version this is; leave empty unless it's the final version)
       - "user_signature": ${ users[0].signature if i == 'final' else '' }
 ---
@@ -238,14 +257,10 @@ question: |
 subquestion: |
   Edit your answers below
 review: 
-  - Edit: birthdate_day_and_month
+  - Edit: petitioner_birthdate
     button: |
-      **What is the month and day of your birthday? (ex: July 12)**:
-      ${ birthdate_day_and_month }
-  - Edit: birthdate_year
-    button: |
-      **In what year were you born?**:
-      ${ birthdate_year }
+      **When is your birthdate?**:
+      ${ petitioner_birthdate }
   - Edit: social_security_number
     button: |
       **What is your social security number?**:
